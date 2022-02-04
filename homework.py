@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from dataclasses import asdict, dataclass
-from typing import List
+from typing import Dict, List, Type
 
 
 @dataclass
@@ -11,16 +11,15 @@ class InfoMessage:
     distance: float
     speed: float
     calories: float
+    MESSAGE: str = ('Тип тренировки: {training_type}; '
+                    'Длительность: {duration:.3f} ч.; '
+                    'Дистанция: {distance:.3f} км; '
+                    'Ср. скорость: {speed:.3f} км/ч; '
+                    'Потрачено ккал: {calories:.3f}.'
+                    )
 
     def get_message(self) -> str:
-        dict_message = asdict(self)
-        str_message = ('Тип тренировки: {training_type}; '
-                       'Длительность: {duration:.3f} ч.; '
-                       'Дистанция: {distance:.3f} км; '
-                       'Ср. скорость: {speed:.3f} км/ч; '
-                       'Потрачено ккал: {calories:.3f}.'
-                       )
-        return str_message.format(**dict_message)
+        return self.MESSAGE.format(**asdict(self))
 
 
 class Training:
@@ -63,8 +62,8 @@ class Training:
 
 class Running(Training):
     """Тренировка: бег."""
-    coeff_calorie_run_1: int = 18
-    coeff_calorie_run_2: int = 20
+    COEFF_CALORIE_RUN_1: int = 18
+    COEFF_CALORIE_RUN_2: int = 20
 
     def __init__(self,
                  action: int,
@@ -74,15 +73,15 @@ class Running(Training):
         super().__init__(action, duration, weight)
 
     def get_spent_calories(self) -> float:
-        return((self.coeff_calorie_run_1 * self.get_mean_speed()
-               - self.coeff_calorie_run_2) * self.weight / self.M_IN_KM
+        return((self.COEFF_CALORIE_RUN_1 * self.get_mean_speed()
+               - self.COEFF_CALORIE_RUN_2) * self.weight / self.M_IN_KM
                * self.duration * self.MIN_IN_HOUR)
 
 
 class SportsWalking(Training):
     """Тренировка: спортивная ходьба."""
-    coeff_calorie_walk_1: float = 0.035
-    coeff_calorie_walk_2: float = 0.029
+    COEFF_CALORIE_WALK_1: float = 0.035
+    COEFF_CALORIE_WALK_2: float = 0.029
 
     def __init__(self,
                  action: int,
@@ -94,17 +93,17 @@ class SportsWalking(Training):
         self.height = height
 
     def get_spent_calories(self) -> float:
-        return((self.coeff_calorie_walk_1 * self.weight
+        return((self.COEFF_CALORIE_WALK_1 * self.weight
                + (self.get_mean_speed() ** 2 // self.height)
-               * self.coeff_calorie_walk_2 * self.weight)
+               * self.COEFF_CALORIE_WALK_2 * self.weight)
                * self.duration * self.MIN_IN_HOUR)
 
 
 class Swimming(Training):
     """Тренировка: плавание."""
     LEN_STEP: float = 1.38
-    coeff_calorie_swim_1: float = 1.1
-    coeff_calorie_swim_2: int = 2
+    COEFF_CALORIE_SWIM_1: float = 1.1
+    COEFF_CALORIE_SWIM_2: int = 2
 
     def __init__(self,
                  action: int,
@@ -122,21 +121,20 @@ class Swimming(Training):
                / self.duration)
 
     def get_spent_calories(self) -> float:
-        return((self.get_mean_speed() + self.coeff_calorie_swim_1)
-               * self.coeff_calorie_swim_2
+        return((self.get_mean_speed() + self.COEFF_CALORIE_SWIM_1)
+               * self.COEFF_CALORIE_SWIM_2
                * self.weight)
 
 
 def read_package(workout_type: str, data: List[float]) -> Training:
     """Прочитать данные полученные от датчиков."""
-    dict_workout_types = {'SWM': Swimming,
-                          'RUN': Running,
-                          'WLK': SportsWalking
-                          }
-    if workout_type not in dict_workout_types:
+    types_workout: Dict[str, Type[Training]] = {'SWM': Swimming,
+                                                'RUN': Running,
+                                                'WLK': SportsWalking
+                                                }
+    if workout_type not in types_workout:
         raise ValueError("Несуществующий код тренировки")
-    else:
-        return dict_workout_types[workout_type](*data)
+    return types_workout[workout_type](*data)
 
 
 def main(training: Training) -> None:
